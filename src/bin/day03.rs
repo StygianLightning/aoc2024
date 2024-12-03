@@ -1,24 +1,70 @@
 use regex::Regex;
 
-fn extract_muls(s: &str) -> Vec<(u32, u32)> {
-    let re = Regex::new(r#"mul\((\d+),(\d+)\)"#).unwrap();
-    re.captures_iter(s)
-        .map(|c| {
-            let (_, [a, b]) = c.extract();
-            (a.parse().unwrap(), b.parse().unwrap())
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Instruction {
+    Mul { a: u32, b: u32 },
+    Do,
+    Dont,
+}
+
+fn extract_instructions(s: &str) -> Vec<Instruction> {
+    let re = Regex::new(r#"mul\((\d+),(\d+)\)|do\(\)|don't\(\)"#).unwrap();
+    re.find_iter(s)
+        .map(|m| {
+            let match_str = m.as_str();
+            match &match_str[0..4] {
+                "mul(" => {
+                    let mul_input = match_str.replace("mul(", "").replace(")", "");
+                    let mut iter = mul_input.split(",");
+                    let a = iter.next().unwrap().parse().unwrap();
+                    let b = iter.next().unwrap().parse().unwrap();
+                    Instruction::Mul { a, b }
+                }
+                "don'" => Instruction::Dont,
+                "do()" => Instruction::Do,
+                _ => {
+                    unreachable!("unknown instruction: {match_str}")
+                }
+            }
         })
         .collect()
 }
 
-fn part1(input: &str) -> u32 {
-    let muls = extract_muls(input);
-    muls.iter().fold(0, |acc, (a, b)| acc + a * b)
+fn part1(instructions: &[Instruction]) -> u32 {
+    let muls = instructions.iter().filter_map(|instr| {
+        if let Instruction::Mul { a, b } = instr {
+            Some((a, b))
+        } else {
+            None
+        }
+    });
+    muls.fold(0, |acc, (a, b)| acc + a * b)
+}
+
+fn part2(instructions: &[Instruction]) -> u32 {
+    instructions
+        .iter()
+        .fold((0, true), |(acc, enabled), instruction| match instruction {
+            Instruction::Mul { a, b } => {
+                if enabled {
+                    (acc + a * b, enabled)
+                } else {
+                    (acc, enabled)
+                }
+            }
+            Instruction::Do => (acc, true),
+            Instruction::Dont => (acc, false),
+        })
+        .0
 }
 
 fn main() {
     let input = std::fs::read_to_string("input/day03.txt").unwrap();
-    let part1_res = part1(&input);
+    let instructions = extract_instructions(&input);
+    let part1_res = part1(&instructions);
     println!("part 1: {part1_res}");
+    let part2_res = part2(&instructions);
+    println!("part 2: {part2_res}");
 }
 
 #[cfg(test)]
@@ -26,9 +72,19 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_extract_muls() {
-        let input = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
-        let muls = extract_muls(input);
-        assert_eq!(muls, vec![(2, 4), (5, 5), (11, 8), (8, 5)]);
+    fn test_extract_instructions() {
+        let input = "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
+        let instructions = extract_instructions(input);
+        assert_eq!(
+            instructions,
+            vec![
+                Instruction::Mul { a: 2, b: 4 },
+                Instruction::Dont,
+                Instruction::Mul { a: 5, b: 5 },
+                Instruction::Mul { a: 11, b: 8 },
+                Instruction::Do,
+                Instruction::Mul { a: 8, b: 5 }
+            ]
+        );
     }
 }
