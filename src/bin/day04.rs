@@ -77,9 +77,51 @@ fn find_targets(idx: UIndex2, grid: &Grid<char>, to_find: &[char]) -> usize {
     ret
 }
 
+fn part2(grid: &Grid<char>) -> usize {
+    let mut ret = 0;
+
+    for line in 0..grid.dimension().y {
+        for x in 0..grid.dimension().x {
+            let idx = uidx2(line, x);
+            ret += if is_xmas(idx, grid) { 1 } else { 0 };
+        }
+    }
+
+    ret
+}
+
+fn is_xmas(idx: UIndex2, grid: &Grid<char>) -> bool {
+    if grid[idx] != 'A' {
+        return false;
+    }
+
+    let diagonals = [
+        (Index2::new(-1, -1), Index2::new(1, 1)),
+        (Index2::new(1, -1), Index2::new(-1, 1)),
+    ];
+
+    for (a, b) in diagonals {
+        let a = get_neighbor(idx, a, grid);
+        let b = get_neighbor(idx, b, grid);
+
+        let (Some(a), Some(b)) = (a, b) else {
+            return false;
+        };
+
+        let valid = grid[a] == 'M' && grid[b] == 'S' || grid[a] == 'S' && grid[b] == 'M';
+        if !valid {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 fn main() {
     let input = std::fs::read_to_string("input/day04.txt").unwrap();
     let grid = parse_grid(&input);
     let part1_res = part1(&grid);
     println!("part 1: {part1_res}");
+    let part2_res = part2(&grid);
+    println!("part 2: {part2_res}");
 }
