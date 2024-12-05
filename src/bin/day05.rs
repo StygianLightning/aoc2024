@@ -36,27 +36,44 @@ fn parse(text: &str) -> Rules {
     rules
 }
 
-fn update_valid(rule: &Rules, update: &[u32]) -> bool {
+fn update_valid(rule: &Rules, update: &[u32]) -> Result<(), (usize, usize)> {
     for (i, a) in update.iter().enumerate() {
-        for b in update[i + 1..].iter() {
+        for (j, b) in update.iter().enumerate().skip(i) {
             if let Some(deps_b) = rule.dependencies.get(&b) {
                 if deps_b.contains(&a) {
-                    return false;
+                    return Err((i, j));
                 }
             }
         }
     }
 
-    return true;
+    return Ok(());
 }
 
 fn part1(rules: &Rules) -> u32 {
     let mut ret = 0;
     for update in &rules.updates {
-        if update_valid(rules, update) {
+        if update_valid(rules, update).is_ok() {
             ret += update[update.len() / 2];
         }
     }
+    ret
+}
+
+fn part2(rules: &Rules) -> u32 {
+    let mut ret = 0;
+    for update in &rules.updates {
+        if let Err((i, j)) = update_valid(rules, update) {
+            // Brute foce. We could compute a topological ordering and sort the update vec by it, but this is good enough.
+            let mut update = update.clone();
+            update.swap(i, j);
+            while let Err((i, j)) = update_valid(rules, &update) {
+                update.swap(i, j);
+            }
+            ret += update[update.len() / 2];
+        }
+    }
+
     ret
 }
 
@@ -65,4 +82,6 @@ fn main() {
     let rules = parse(&input);
     let part1_res = part1(&rules);
     println!("part 1 result: {part1_res}");
+    let part2_res = part2(&rules);
+    println!("part 2 result: {part2_res}");
 }
