@@ -36,8 +36,33 @@ fn parse(text: &str) -> Rules {
     rules
 }
 
+fn update_valid(rule: &Rules, update: &[u32]) -> bool {
+    for (i, a) in update.iter().enumerate() {
+        for b in update[i + 1..].iter() {
+            if let Some(deps_b) = rule.dependencies.get(&b) {
+                if deps_b.contains(&a) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+fn part1(rules: &Rules) -> u32 {
+    let mut ret = 0;
+    for update in &rules.updates {
+        if update_valid(rules, update) {
+            ret += update[update.len() / 2];
+        }
+    }
+    ret
+}
+
 fn main() {
     let input = std::fs::read_to_string("input/day05.txt").unwrap();
     let rules = parse(&input);
-    println!("{rules:#?}");
+    let part1_res = part1(&rules);
+    println!("part 1 result: {part1_res}");
 }
