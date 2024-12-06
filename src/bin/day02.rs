@@ -35,7 +35,7 @@ fn valid_report(report: &[u32]) -> Result<(), usize> {
             return Err(i);
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 fn valid_report_with_tolerance(r: &mut Vec<u32>) -> bool {
@@ -61,13 +61,13 @@ fn valid_report_with_tolerance(r: &mut Vec<u32>) -> bool {
     // There is one more way to potentially fix the report: by removing the first element of the original report.
     // This can change whether elements have to be smaller or larger than the subsequent element.
     let report = &original_report[1..];
-    return valid_report(report).is_ok();
+    valid_report(report).is_ok()
 }
 
 fn part1(reports: &[Vec<u32>]) -> usize {
     reports
         .iter()
-        .map(|r| valid_report(*&r))
+        .map(|r| valid_report(r))
         .filter(|r| r.is_ok())
         .count()
 }
@@ -75,7 +75,7 @@ fn part1(reports: &[Vec<u32>]) -> usize {
 fn part2(reports: &mut [Vec<u32>]) -> usize {
     reports
         .iter_mut()
-        .map(|r| valid_report_with_tolerance(r))
+        .map(valid_report_with_tolerance)
         .filter(|b| *b)
         .count()
 }

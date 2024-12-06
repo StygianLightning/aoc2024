@@ -22,11 +22,7 @@ fn parse(text: &str) -> Rules {
             let mut nums = line.split("|").map(|s| s.parse().unwrap());
             let a = nums.next().unwrap();
             let b = nums.next().unwrap();
-            rules
-                .dependencies
-                .entry(a)
-                .or_insert(HashSet::new())
-                .insert(b);
+            rules.dependencies.entry(a).or_default().insert(b);
         } else {
             let nums = line.split(",").map(|s| s.parse().unwrap()).collect();
             rules.updates.push(nums);
@@ -39,15 +35,15 @@ fn parse(text: &str) -> Rules {
 fn update_valid(rule: &Rules, update: &[u32]) -> Result<(), (usize, usize)> {
     for (i, a) in update.iter().enumerate() {
         for (j, b) in update.iter().enumerate().skip(i) {
-            if let Some(deps_b) = rule.dependencies.get(&b) {
-                if deps_b.contains(&a) {
+            if let Some(deps_b) = rule.dependencies.get(b) {
+                if deps_b.contains(a) {
                     return Err((i, j));
                 }
             }
         }
     }
 
-    return Ok(());
+    Ok(())
 }
 
 fn part1(rules: &Rules) -> u32 {

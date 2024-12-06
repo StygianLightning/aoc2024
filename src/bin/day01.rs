@@ -13,7 +13,7 @@ fn extract_nums(list: &str) -> (Vec<u32>, Vec<u32>) {
     (first, second)
 }
 
-fn part1(first: &mut Vec<u32>, second: &mut Vec<u32>) -> u32 {
+fn part1(first: &mut [u32], second: &mut [u32]) -> u32 {
     first.sort();
     second.sort();
 
@@ -25,8 +25,6 @@ fn part1(first: &mut Vec<u32>, second: &mut Vec<u32>) -> u32 {
 }
 
 fn part2(first: &[u32], second: &[u32]) -> u32 {
-    let mut score = 0;
-
     let mut frequency_map = HashMap::new();
 
     for i in second {

@@ -1,6 +1,6 @@
 use aoc2024::{
     grid::Grid,
-    index2::{self, uidx2, Index2, UIndex2},
+    index2::{uidx2, Index2, UIndex2},
 };
 
 fn parse_grid(input: &str) -> Grid<char> {
@@ -22,9 +22,9 @@ fn get_neighbor<T>(position: UIndex2, direction: Index2, grid: &Grid<T>) -> Opti
     }
     let target = uidx2(target.x as _, target.y as _);
     if target.x < grid.dimension().x && target.y < grid.dimension().y {
-        return Some(target);
+        Some(target)
     } else {
-        return None;
+        None
     }
 }
 
@@ -114,7 +114,7 @@ fn is_xmas(idx: UIndex2, grid: &Grid<char>) -> bool {
         }
     }
 
-    return true;
+    true
 }
 
 fn main() {
