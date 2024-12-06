@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use aoc2024::{
     grid::Grid,
@@ -19,7 +19,7 @@ enum Direction {
     Right,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Guard {
     direction: Direction,
     position: UIndex2,
@@ -99,19 +99,28 @@ fn parse(text: &str) -> (Grid<Tile>, Guard) {
 fn main() {
     let input = std::fs::read_to_string("input/day06.txt").unwrap();
 
-    let (grid, guard) = parse(&input);
+    let (mut grid, guard) = parse(&input);
 
     let part1_res = part1(&grid, guard);
 
     println!("part 1 result: {part1_res}");
+
+    let part2_res = part2(&mut grid, guard);
+    println!("part 2 result: {part2_res}");
 }
 
-fn part1(grid: &Grid<Tile>, mut guard: Guard) -> u32 {
+#[derive(Debug)]
+struct WalkResult {
+    seen: HashSet<(UIndex2, Direction)>,
+    looped: bool,
+}
+
+fn walk(grid: &Grid<Tile>, mut guard: Guard) -> WalkResult {
     let mut seen: HashSet<(UIndex2, Direction)> = HashSet::new();
 
     loop {
         if seen.contains(&(guard.position, guard.direction)) {
-            break;
+            return WalkResult { seen, looped: true };
         }
         seen.insert((guard.position, guard.direction));
 
@@ -124,13 +133,21 @@ fn part1(grid: &Grid<Tile>, mut guard: Guard) -> u32 {
             guard.position = next_position;
         }
     }
+    WalkResult {
+        seen,
+        looped: false,
+    }
+}
 
+fn part1(grid: &Grid<Tile>, guard: Guard) -> u32 {
+    let WalkResult { seen, .. } = walk(grid, guard);
     // count all seen squares, but ignore multiple visits from different directions
     let all_visited = seen
         .iter()
         .map(|(position, _)| *position)
         .collect::<HashSet<_>>();
 
+    /*
     for y in 0..grid.dimension().y {
         for x in 0..grid.dimension().x {
             let idx = uidx2(x, y);
@@ -147,6 +164,32 @@ fn part1(grid: &Grid<Tile>, mut guard: Guard) -> u32 {
         println!();
     }
     println!();
+    */
 
     all_visited.len() as _
+}
+
+fn part2(grid: &mut Grid<Tile>, guard: Guard) -> u32 {
+    let WalkResult { seen, .. } = walk(grid, guard);
+
+    // block each visited position, check for loops, unblock after.
+    let mut potential_blocks = seen
+        .iter()
+        .map(|(position, _)| *position)
+        .collect::<HashSet<_>>();
+    potential_blocks.remove(&guard.position);
+
+    let mut ret = 0;
+    for position in potential_blocks {
+        grid[position] = Tile::Blocked;
+
+        let WalkResult { looped, .. } = walk(grid, guard);
+        if looped {
+            ret += 1;
+        }
+
+        grid[position] = Tile::Empty;
+    }
+
+    ret
 }
