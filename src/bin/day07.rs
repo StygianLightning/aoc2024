@@ -8,6 +8,7 @@ struct Combination {
 enum Operation {
     Add,
     Mul,
+    Concat,
 }
 
 fn parse_combinations(input: &str) -> Vec<Combination> {
@@ -27,18 +28,23 @@ fn parse_combinations(input: &str) -> Vec<Combination> {
         .collect()
 }
 
-fn check_combination(combination: &Combination) -> bool {
+fn check_combination(combination: &Combination, base: u64) -> bool {
     let num_operations = combination.operands.len() - 1;
-
     // brute force all combinations
-    let pow2 = 1 << num_operations;
-    for bitset in 0..pow2 {
+    let pow = u64::pow(base, num_operations as _);
+
+    for bitset in 0..pow {
         let mut res = combination.operands[0];
+        let mut bitset = bitset;
         for i in 0..num_operations {
-            let op = if (bitset & (1 << i)) > 0 {
-                Operation::Mul
-            } else {
-                Operation::Add
+            let digit = bitset % base;
+            bitset = bitset / base;
+
+            let op = match digit {
+                0 => Operation::Add,
+                1 => Operation::Mul,
+                2 => Operation::Concat,
+                _ => panic!("unsupported digit {digit}"),
             };
 
             let next_operand = combination.operands[i + 1];
@@ -46,6 +52,10 @@ fn check_combination(combination: &Combination) -> bool {
             res = match op {
                 Operation::Add => res + next_operand,
                 Operation::Mul => res * next_operand,
+                Operation::Concat => {
+                    let num_digits = format!("{next_operand}").len() as u32;
+                    res * u64::pow(10, num_digits) + next_operand
+                }
             };
         }
 
@@ -57,10 +67,10 @@ fn check_combination(combination: &Combination) -> bool {
     false
 }
 
-fn part1(combinations: &[Combination]) -> u64 {
+fn compute(combinations: &[Combination], base: u64) -> u64 {
     combinations
         .iter()
-        .filter(|c| check_combination(c))
+        .filter(|c| check_combination(c, base))
         .map(|c| c.total)
         .sum()
 }
@@ -69,6 +79,9 @@ fn main() {
     let input = std::fs::read_to_string("input/day07.txt").unwrap();
     let combinations = parse_combinations(&input);
 
-    let part1_res = part1(&combinations);
+    let part1_res = compute(&combinations, 2);
     println!("part 1 result: {part1_res}");
+
+    let part2_res = compute(&combinations, 3);
+    println!("part 2 result: {part2_res}");
 }
