@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use aoc2024::{
     grid::Grid,
-    index2::{uidx2, UIndex2},
+    index2::{uidx2, Index2, UIndex2},
 };
 
 fn parse(input: &str) -> Grid<char> {
@@ -37,7 +37,7 @@ fn positions_per_node(grid: &Grid<char>) -> HashMap<char, Vec<UIndex2>> {
     positions_per_node
 }
 
-fn part1(grid: &Grid<char>) -> usize {
+fn calculate_antinodes(grid: &Grid<char>, only_once: bool) -> usize {
     let positions_per_node = positions_per_node(grid);
 
     let mut anti_nodes = HashSet::new();
@@ -49,16 +49,44 @@ fn part1(grid: &Grid<char>) -> usize {
                 let pos_b = pos_b.to_index2();
 
                 let diff = pos_b - pos_a;
-                let c = pos_b + diff;
-                let d = pos_a - diff;
+                let c: Box<dyn Iterator<Item = Index2>> = if only_once {
+                    // part 1: only two anti-nodes per pair
+                    Box::new(std::iter::once(pos_b + diff))
+                } else {
+                    // part 2: the entire line inside the grid.
+                    // in-between points are not necessary (i.e. if diff was (2, 2), we don't need to consider the normalized (1, 1) instead).
+                    let mut next = pos_b;
+                    Box::new(std::iter::repeat_with(move || {
+                        let ret = next;
+                        next = next + diff;
+                        ret
+                    }))
+                };
+                let d: Box<dyn Iterator<Item = Index2>> = if only_once {
+                    Box::new(std::iter::once(pos_a - diff))
+                } else {
+                    let mut next = pos_a;
+                    Box::new(std::iter::repeat_with(move || {
+                        let ret = next;
+                        next = next - diff;
+                        ret
+                    }))
+                };
 
-                for pos in [c, d] {
+                fn check_position(pos: Index2, grid: &Grid<char>) -> bool {
                     if pos.x < 0 || pos.y < 0 {
-                        continue;
+                        return false;
                     }
                     let pos = uidx2(pos.x as _, pos.y as _);
 
-                    if grid.get(pos).is_some() {
+                    grid.get(pos).is_some()
+                }
+
+                for iterator in [c, d] {
+                    for pos in iterator {
+                        if !check_position(pos, grid) {
+                            break;
+                        }
                         anti_nodes.insert(pos);
                     }
                 }
@@ -73,6 +101,9 @@ fn main() {
     let input = std::fs::read_to_string("input/day08.txt").unwrap();
     let grid = parse(&input);
 
-    let part1_res = part1(&grid);
+    let part1_res = calculate_antinodes(&grid, true);
     println!("part 1 result : {part1_res}");
+
+    let part2_res = calculate_antinodes(&grid, false);
+    println!("part 2 result : {part2_res}");
 }
