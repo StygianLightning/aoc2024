@@ -29,7 +29,7 @@ fn neighbors(idx: UIndex2, grid: &Grid<u32>) -> impl Iterator<Item = UIndex2> + 
         .filter_map(move |dir| dir.get_neighbor(idx, grid))
 }
 
-fn part1(grid: &Grid<u32>) -> u32 {
+fn trails_score(grid: &Grid<u32>, only_unique_targets: bool) -> u32 {
     let mut ret = 0;
 
     let mut starts = vec![];
@@ -62,7 +62,11 @@ fn part1(grid: &Grid<u32>) -> u32 {
             next_open.clear();
         }
 
-        ret += open.into_iter().collect::<HashSet<_>>().len() as u32;
+        if only_unique_targets {
+            ret += open.into_iter().collect::<HashSet<_>>().len() as u32;
+        } else {
+            ret += open.len() as u32;
+        }
     }
 
     ret
@@ -72,6 +76,9 @@ fn main() {
     let input = std::fs::read_to_string("input/day10.txt").unwrap();
     let grid = parse(&input);
 
-    let part1_res = part1(&grid);
+    let part1_res = trails_score(&grid, true);
+    println!("part 1 res: {part1_res}");
+
+    let part1_res = trails_score(&grid, false);
     println!("part 1 res: {part1_res}");
 }
