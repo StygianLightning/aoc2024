@@ -32,6 +32,15 @@ impl Direction {
         }
     }
 
+    pub fn invert(self) -> Self {
+        match self {
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+        }
+    }
+
     pub fn get_neighbor<T>(self, idx: UIndex2, grid: &Grid<T>) -> Option<UIndex2> {
         let offset = self.to_index2();
         let target = idx.to_index2() + offset;
@@ -46,5 +55,9 @@ impl Direction {
         } else {
             None
         }
+    }
+
+    pub fn offset_index(&self, idx: Index2) -> Index2 {
+        idx + self.to_index2()
     }
 }
