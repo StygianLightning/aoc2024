@@ -1,16 +1,16 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BinaryHeap, HashSet},
 };
 
-use aoc2024::index2::{uidx2, UIndex2};
+use aoc2024::index2::{u64idx2, U64Index2};
 use regex::Regex;
 
 #[derive(Debug, Clone, Copy)]
 struct Configuration {
-    a: UIndex2,
-    b: UIndex2,
-    target: UIndex2,
+    a: U64Index2,
+    b: U64Index2,
+    target: U64Index2,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -41,9 +41,9 @@ fn parse(input: &str) -> Vec<Configuration> {
     let mut ret = vec![];
 
     let mut current = Configuration {
-        a: UIndex2::zero(),
-        b: UIndex2::zero(),
-        target: UIndex2::zero(),
+        a: U64Index2::zero(),
+        b: U64Index2::zero(),
+        target: U64Index2::zero(),
     };
     let re = Regex::new(r#"X[+=](\d+),\sY[+=](\d+)"#).unwrap();
     for line in input.lines() {
@@ -57,11 +57,11 @@ fn parse(input: &str) -> Vec<Configuration> {
         let y = y.parse().unwrap();
 
         if line.contains("A") {
-            current.a = uidx2(x, y);
+            current.a = u64idx2(x, y);
         } else if line.contains("B") {
-            current.b = uidx2(x, y);
+            current.b = u64idx2(x, y);
         } else if line.contains("Prize") {
-            current.target = uidx2(x, y);
+            current.target = u64idx2(x, y);
             ret.push(current);
         } else {
             panic!("unknown input line {line}");
@@ -85,7 +85,7 @@ fn shortest_path(configuration: &Configuration) -> u32 {
     heap.push(Reverse(start));
 
     while let Some(Reverse(input)) = heap.pop() {
-        let position = input.a * configuration.a + input.b * configuration.b;
+        let position = input.a as u64 * configuration.a + input.b as u64 * configuration.b;
         if position == configuration.target {
             return input.cost();
         }
@@ -115,10 +115,45 @@ fn shortest_path(configuration: &Configuration) -> u32 {
     0
 }
 
+fn part2(configs: &[Configuration]) -> u64 {
+    configs
+        .iter()
+        .map(|c| {
+            let num = (c.a.y * c.target.x) as i128 - (c.a.x * c.target.y) as i128;
+            let denom = (c.a.y * c.b.x) as i128 - (c.a.x * c.b.y) as i128;
+            let amount_b = num / denom;
+
+            let num = c.target.x as i128 - amount_b * c.b.x as i128;
+            let denom = c.a.x as i128;
+            let amount_a = num / denom;
+
+            if amount_a as u64 * c.a + amount_b as u64 * c.b != c.target {
+                0
+            } else {
+                amount_a as u64 * 3 + amount_b as u64
+            }
+        })
+        .sum()
+}
+
 fn main() {
     let input = std::fs::read_to_string("input/day13.txt").unwrap();
-    let config = parse(&input);
+    let configs = parse(&input);
 
-    let part1_res = part1(&config);
-    println!("part 1 result: {part1_res}")
+    let part1_res = find_min_cost(&configs);
+    println!("part 1 result: {part1_res}");
+
+    const OFFSET: u64 = 10000000000000;
+    let offset = u64idx2(OFFSET, OFFSET);
+
+    let configs = configs
+        .iter()
+        .map(|c| Configuration {
+            a: c.a,
+            b: c.b,
+            target: c.target + offset,
+        })
+        .collect::<Vec<_>>();
+    let part2_res = part2(&configs);
+    println!("part 2 result: {part2_res}")
 }

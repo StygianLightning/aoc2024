@@ -121,6 +121,72 @@ impl AddAssign for UIndex2 {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Deserialize, Serialize)]
+pub struct U64Index2 {
+    pub x: u64,
+    pub y: u64,
+}
+
+pub fn u64idx2(x: u64, y: u64) -> U64Index2 {
+    U64Index2::new(x, y)
+}
+
+impl U64Index2 {
+    pub fn new(x: u64, y: u64) -> Self {
+        U64Index2 { x, y }
+    }
+
+    pub fn zero() -> U64Index2 {
+        U64Index2::new(0, 0)
+    }
+
+    pub fn to_index2(self) -> Index2 {
+        Index2::new(self.x as i32, self.y as i32)
+    }
+
+    pub fn size(&self) -> u64 {
+        self.x * self.y
+    }
+}
+
+impl Add for U64Index2 {
+    type Output = U64Index2;
+
+    fn add(self, rhs: U64Index2) -> Self::Output {
+        U64Index2::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl Sub for U64Index2 {
+    type Output = U64Index2;
+
+    fn sub(self, rhs: U64Index2) -> Self::Output {
+        U64Index2::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl Mul<U64Index2> for u64 {
+    type Output = U64Index2;
+
+    fn mul(self, rhs: U64Index2) -> Self::Output {
+        U64Index2::new(rhs.x * self, rhs.y * self)
+    }
+}
+
+impl Div<u64> for U64Index2 {
+    type Output = U64Index2;
+
+    fn div(self, x: u64) -> Self::Output {
+        U64Index2::new(self.x / x, self.y / x)
+    }
+}
+
+impl AddAssign for U64Index2 {
+    fn add_assign(&mut self, rhs: U64Index2) {
+        *self = *self + rhs;
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
