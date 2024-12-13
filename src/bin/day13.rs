@@ -71,7 +71,7 @@ fn parse(input: &str) -> Vec<Configuration> {
     ret
 }
 
-fn part1(configs: &[Configuration]) -> u32 {
+fn find_min_cost(configs: &[Configuration]) -> u32 {
     configs.iter().map(|c| shortest_path(c)).sum()
 }
 
@@ -84,32 +84,30 @@ fn shortest_path(configuration: &Configuration) -> u32 {
     // heap is max heap, Reverse to get min cost
     heap.push(Reverse(start));
 
-    const LIMIT: u32 = 100;
-
     while let Some(Reverse(input)) = heap.pop() {
         let position = input.a * configuration.a + input.b * configuration.b;
         if position == configuration.target {
             return input.cost();
-        } else {
-            // check all successors
-            let successors = [
-                ClawInputs {
-                    a: input.a + 1,
-                    b: input.b,
-                },
-                ClawInputs {
-                    a: input.a,
-                    b: input.b + 1,
-                },
-            ];
-            for successor in successors {
-                if successor.a > LIMIT || successor.b > LIMIT {
-                    continue;
-                }
-                if !inserted.contains(&successor) {
-                    inserted.insert(successor);
-                    heap.push(Reverse(successor));
-                }
+        }
+        if position.x > configuration.target.x || position.y > configuration.target.y {
+            continue;
+        }
+
+        // check all successors
+        let successors = [
+            ClawInputs {
+                a: input.a + 1,
+                b: input.b,
+            },
+            ClawInputs {
+                a: input.a,
+                b: input.b + 1,
+            },
+        ];
+        for successor in successors {
+            if !inserted.contains(&successor) {
+                inserted.insert(successor);
+                heap.push(Reverse(successor));
             }
         }
     }
