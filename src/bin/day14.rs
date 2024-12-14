@@ -101,6 +101,64 @@ fn main() {
     let input = std::fs::read_to_string("input/day14.txt").unwrap();
     let robots = parse(&input);
 
-    let part1_res = part1(&robots, 100, uidx2(101, 103));
+    let map_size = uidx2(101, 103);
+    let part1_res = part1(&robots, 100, map_size);
     println!("part 1 result: {part1_res}");
+
+    let part2_res = part2(&robots, map_size);
+    println!("part 2 result: {part2_res}");
+}
+
+fn part2(robots: &[Robot], map_size: UIndex2) -> u32 {
+    let mut grid = Grid::<u32>::new_with_default(map_size);
+    let mut max_connected = 0;
+
+    for num_iterations in 0..100_000 {
+        for robot in robots {
+            let position_after = robot_position_after_iterations(robot, num_iterations, map_size);
+            grid[position_after] += 1;
+        }
+
+        // check if tree
+        let mut print_potential_tree = false;
+
+        const CONNECTED_TREE_THRESHOLD: u32 = 25;
+
+        for y in 0..grid.dimension().y {
+            let mut connected = 0;
+            for x in 0..grid.dimension().x {
+                let idx = uidx2(x, y);
+                let value = grid[idx];
+                if value > 0 {
+                    connected += 1;
+                    max_connected = u32::max(max_connected, connected);
+
+                    if connected >= CONNECTED_TREE_THRESHOLD {
+                        print_potential_tree = true;
+                    }
+                } else {
+                    connected = 0;
+                }
+            }
+        }
+
+        if print_potential_tree {
+            for y in 0..grid.dimension().y {
+                for x in 0..grid.dimension().x {
+                    let value = grid[uidx2(x, y)];
+                    if value == 0 {
+                        print!(".");
+                    } else {
+                        print!("{}", value);
+                    }
+                }
+                println!();
+            }
+            println!();
+
+            return num_iterations;
+        }
+        grid.reset_to_default();
+    }
+    panic!("no tree found");
 }
