@@ -4,7 +4,7 @@ use aoc2024::{
     index2::{uidx2, UIndex2},
 };
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 enum Tile {
     #[default]
     Empty,
@@ -22,7 +22,6 @@ struct Input {
 fn parse(input: &str) -> Input {
     let width = input.lines().next().unwrap().len() as u32;
     let height = input.lines().take_while(|l| !l.trim().is_empty()).count() as u32;
-
     let size = uidx2(width, height);
 
     let mut grid = Grid::new_with_default(size);
@@ -75,8 +74,67 @@ fn parse(input: &str) -> Input {
     }
 }
 
+fn part1(input: &mut Input) -> u64 {
+    for direction in &input.movements {
+        let target = direction.get_neighbor(input.robot, &input.grid).unwrap();
+        match input.grid[target] {
+            Tile::Empty => input.robot = target,
+            Tile::Box => {
+                let mut end = target;
+                loop {
+                    end = direction.get_neighbor(end, &input.grid).unwrap();
+                    if input.grid[end] != Tile::Box {
+                        break;
+                    }
+                }
+                if input.grid[end] == Tile::Empty {
+                    // move and push all boxes
+                    input.grid[target] = Tile::Empty;
+                    input.grid[end] = Tile::Box;
+                    input.robot = target;
+                } else {
+                    // blocked by wall, do nothing
+                }
+            }
+            Tile::Wall => {}
+        }
+    }
+    for y in 0..input.grid.dimension().y {
+        for x in 0..input.grid.dimension().x {
+            let idx = uidx2(x, y);
+            match input.grid[idx] {
+                Tile::Empty => {
+                    if idx == input.robot {
+                        print!("@");
+                    } else {
+                        print!(".")
+                    }
+                }
+                Tile::Box => print!("O"),
+                Tile::Wall => print!("#"),
+            }
+        }
+        println!();
+    }
+
+    let mut score = 0;
+
+    for y in 0..input.grid.dimension().y {
+        for x in 0..input.grid.dimension().x {
+            let idx = uidx2(x, y);
+            if let Tile::Box = input.grid[idx] {
+                score += 100 * y as u64 + x as u64;
+            }
+        }
+    }
+
+    score
+}
+
 fn main() {
     let input = std::fs::read_to_string("input/day15.txt").unwrap();
-    let input = parse(&input);
-    println!("{input:?}");
+
+    let mut input = parse(&input);
+    let part1_res = part1(&mut input);
+    println!("part 1 result: {part1_res}");
 }
