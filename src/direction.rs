@@ -3,7 +3,7 @@ use crate::{
     index2::{uidx2, Index2, UIndex2},
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum Direction {
     Up,
     Down,
