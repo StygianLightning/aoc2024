@@ -1,6 +1,7 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
+    vec,
 };
 
 use aoc2024::{
@@ -111,7 +112,7 @@ fn parse(input: &str) -> Input {
 const COST_ROTATE: u64 = 1000;
 const COST_MOVE: u64 = 1;
 
-fn part1(input: &Input) -> u64 {
+fn analyze(input: &Input) -> (u64, u64) {
     let state = State {
         position: input.start,
         facing: Direction::Left,
@@ -124,41 +125,88 @@ fn part1(input: &Input) -> u64 {
     let mut open = BinaryHeap::new();
     open.push(Reverse(state));
 
-    while let Some(Reverse(state)) = open.pop() {
-        if state.position == input.end {
-            return state.cost;
+    // for each state, save ALL preceding positions with the minimum cost
+    let mut min_cost_predecessors = HashMap::new();
+
+    let mut best_state = state;
+    while let Some(Reverse(current_state)) = open.pop() {
+        if current_state.position == input.end {
+            best_state = current_state;
+            break;
         }
 
-        let min_cost = min_cost_per_position[&(state.position, state.facing)];
-        if min_cost < state.cost {
+        let min_cost = min_cost_per_position[&(current_state.position, current_state.facing)];
+        if min_cost < current_state.cost {
             // we've found a better path to this state in the meantime
             continue;
         }
 
-        let mut neighbouring_states = vec![state.turn_clockwise(), state.turn_counterclockwise()];
-        if let Some(n) = state.move_in(state.facing, &input.grid) {
+        let mut neighbouring_states = vec![
+            current_state.turn_clockwise(),
+            current_state.turn_counterclockwise(),
+        ];
+        if let Some(n) = current_state.move_in(current_state.facing, &input.grid) {
             neighbouring_states.push(n);
         }
 
-        for state in neighbouring_states {
+        for new_state in neighbouring_states {
             let old_cost = min_cost_per_position
-                .get(&(state.position, state.facing))
+                .get(&(new_state.position, new_state.facing))
                 .cloned()
                 .unwrap_or(u64::MAX);
-            if state.cost < old_cost {
-                min_cost_per_position.insert((state.position, state.facing), state.cost);
-                open.push(Reverse(state));
+            if new_state.cost < old_cost {
+                min_cost_per_position
+                    .insert((new_state.position, new_state.facing), new_state.cost);
+                open.push(Reverse(new_state));
+                min_cost_predecessors
+                    .insert((new_state.position, new_state.facing), vec![current_state]);
+            }
+            if new_state.cost == old_cost {
+                // going from the current state to the new state is an alternate path with the same total cost
+                min_cost_predecessors
+                    .get_mut(&(new_state.position, new_state.facing))
+                    .unwrap()
+                    .push(current_state);
             }
         }
     }
-    todo!()
+
+    if best_state.position != input.end {
+        // couldn't reach the target
+        panic!("No path to target exists");
+    }
+
+    let mut positions_on_best_path = HashSet::new();
+    positions_on_best_path.insert(best_state.position);
+
+    let mut open = vec![];
+    for direction in Direction::ALL {
+        let cost = min_cost_per_position
+            .get(&(best_state.position, *direction))
+            .cloned()
+            .unwrap_or(u64::MAX);
+        if cost == best_state.cost {
+            open.push((best_state.position, *direction));
+        }
+    }
+
+    while let Some((position, facing)) = open.pop() {
+        if let Some(predecessors) = min_cost_predecessors.get(&(position, facing)) {
+            for pred in predecessors {
+                positions_on_best_path.insert(pred.position);
+                open.push((pred.position, pred.facing));
+            }
+        }
+    }
+
+    (best_state.cost, positions_on_best_path.len() as _)
 }
 
 fn main() {
     let input = std::fs::read_to_string("input/day16.txt").unwrap();
     let input = parse(&input);
-    println!("{input:#?}");
 
-    let part1_res = part1(&input);
-    println!("part 1 result: {part1_res}");
+    let (part1, part2) = analyze(&input);
+    println!("part 1 result: {part1}");
+    println!("part 2 result: {part2}");
 }
