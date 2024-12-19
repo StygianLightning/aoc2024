@@ -34,6 +34,39 @@ impl TrieNode {
         }
         node.leaf = true;
     }
+
+    fn child(&self, c: char) -> Option<&Box<TrieNode>> {
+        self.children.get(&c)
+    }
+}
+
+fn check_design(design: &str, mut root: &TrieNode) -> bool {
+    let mut reachable = vec![false; design.len() + 1];
+    reachable[0] = true;
+
+    for i in 0..design.len() {
+        let mut node = root;
+        if !reachable[i] {
+            continue;
+        }
+
+        for (idx, c) in design.char_indices().skip(i) {
+            if let Some(n) = node.child(c) {
+                node = n;
+                if node.leaf {
+                    reachable[idx + 1] = true;
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
+    *reachable.last().unwrap()
+}
+
+fn part1(designs: &[String], trie: &TrieNode) -> usize {
+    designs.iter().filter(|d| check_design(d, trie)).count()
 }
 
 fn main() {
@@ -43,6 +76,9 @@ fn main() {
     println!("{input:?}");
     let trie = build_trie(&input);
     println!("{trie:#?}");
+
+    let part1_res = part1(&input.designs, &trie);
+    println!("part 1: {part1_res}");
 }
 
 fn build_trie(input: &Input) -> TrieNode {
