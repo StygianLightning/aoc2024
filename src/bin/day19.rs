@@ -40,13 +40,13 @@ impl TrieNode {
     }
 }
 
-fn check_design(design: &str, mut root: &TrieNode) -> bool {
-    let mut reachable = vec![false; design.len() + 1];
-    reachable[0] = true;
+fn check_design(design: &str, mut root: &TrieNode) -> usize {
+    let mut paths = vec![0; design.len() + 1];
+    paths[0] = 1;
 
     for i in 0..design.len() {
         let mut node = root;
-        if !reachable[i] {
+        if paths[i] == 0 {
             continue;
         }
 
@@ -54,7 +54,7 @@ fn check_design(design: &str, mut root: &TrieNode) -> bool {
             if let Some(n) = node.child(c) {
                 node = n;
                 if node.leaf {
-                    reachable[idx + 1] = true;
+                    paths[idx + 1] += paths[i];
                 }
             } else {
                 break;
@@ -62,11 +62,15 @@ fn check_design(design: &str, mut root: &TrieNode) -> bool {
         }
     }
 
-    *reachable.last().unwrap()
+    *paths.last().unwrap()
 }
 
 fn part1(designs: &[String], trie: &TrieNode) -> usize {
-    designs.iter().filter(|d| check_design(d, trie)).count()
+    designs.iter().filter(|d| check_design(d, trie) > 0).count()
+}
+
+fn part2(designs: &[String], trie: &TrieNode) -> usize {
+    designs.iter().map(|d| check_design(d, trie)).sum()
 }
 
 fn main() {
@@ -79,6 +83,9 @@ fn main() {
 
     let part1_res = part1(&input.designs, &trie);
     println!("part 1: {part1_res}");
+
+    let part2_res = part2(&input.designs, &trie);
+    println!("part 2: {part2_res}");
 }
 
 fn build_trie(input: &Input) -> TrieNode {
