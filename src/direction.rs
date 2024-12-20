@@ -45,11 +45,9 @@ impl Direction {
         let offset = self.to_index2();
         let target = idx.to_index2() + offset;
 
-        if target.x < 0 || target.y < 0 {
+        let Some(idx) = target.to_index2() else {
             return None;
-        }
-
-        let idx = uidx2(target.x as _, target.y as _);
+        };
         if grid.get(idx).is_some() {
             Some(idx)
         } else {

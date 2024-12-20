@@ -15,6 +15,14 @@ impl Index2 {
     pub fn zero() -> Index2 {
         Index2::new(0, 0)
     }
+
+    pub fn to_index2(self) -> Option<UIndex2> {
+        if self.x < 0 || self.y < 0 {
+            return None;
+        }
+
+        Some(uidx2(self.x as _, self.y as _))
+    }
 }
 
 impl Add for Index2 {

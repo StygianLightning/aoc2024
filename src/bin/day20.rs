@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use aoc2024::{
     direction::Direction,
     grid::Grid,
-    index2::{uidx2, UIndex2},
+    index2::{uidx2, Index2, UIndex2},
 };
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -75,7 +75,7 @@ fn parse(input: &str) -> Input {
     Input { grid, start, end }
 }
 
-fn shortcut_savings(input: &Input) -> HashMap<u32, u32> {
+fn shortcut_savings(input: &Input, cheat_len: u32) -> HashMap<u32, u32> {
     let mut distance_from_start = HashMap::new();
     distance_from_start.insert(input.start, 0);
 
@@ -99,39 +99,45 @@ fn shortcut_savings(input: &Input) -> HashMap<u32, u32> {
     let mut shortcut_savings = HashMap::new();
 
     for node in path.iter().cloned() {
-        for direction in Direction::ALL {
-            if let Some(neighbor) = direction.get_neighbor(node, &input.grid) {
-                if input.grid[neighbor] != Tile::Wall {
-                    continue;
-                }
-                let Some(next_in_direction) = direction.get_neighbor(neighbor, &input.grid) else {
+        let cheat_len = cheat_len as i32;
+        for x in -cheat_len..=cheat_len {
+            for y in -cheat_len..=cheat_len {
+                let manhattan_distance = x.abs() + y.abs();
+                if manhattan_distance > cheat_len {
                     continue;
                 };
-                if input.grid[next_in_direction] != Tile::Empty {
+
+                let offset = Index2::new(x, y);
+                let target = node.to_index2() + offset;
+                let Some(target) = target.to_index2() else {
+                    continue;
+                };
+
+                let Some(target_tile) = input.grid.get(target) else {
+                    continue;
+                };
+                if *target_tile == Tile::Wall {
                     continue;
                 }
 
-                if distance_from_start[&next_in_direction] < distance_from_start[&node] {
-                    // going backwards
-                    continue;
+                let savings = distance_from_start[&target] as i32
+                    - distance_from_start[&node] as i32
+                    - manhattan_distance;
+                if savings > 0 {
+                    let count = shortcut_savings.entry(savings as u32).or_default();
+                    *count += 1;
                 }
-
-                let savings =
-                    distance_from_start[&next_in_direction] - distance_from_start[&node] - 2;
-                let count = shortcut_savings.entry(savings).or_default();
-                *count += 1;
             }
         }
     }
-
     shortcut_savings
 }
 
-fn part1(input: &Input) -> u32 {
-    let shortcut_savings = shortcut_savings(input);
+fn find_savings(input: &Input, cheat_len: u32) -> u32 {
+    let shortcut_savings = shortcut_savings(input, cheat_len);
     shortcut_savings
-        .iter()
-        .filter_map(|(k, v)| (*k >= 100).then_some(*v))
+        .into_iter()
+        .filter_map(|(k, v)| (k >= 100).then_some(v))
         .sum()
 }
 
@@ -140,6 +146,9 @@ fn main() {
     let input = parse(&input);
     input.print();
 
-    let part1 = part1(&input);
+    let part1 = find_savings(&input, 2);
     println!("part 1: {part1}");
+
+    let part2 = find_savings(&input, 20);
+    println!("part 2: {part2}");
 }
