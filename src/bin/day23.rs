@@ -85,12 +85,91 @@ fn part1(graph: &Graph) -> u32 {
         .sum()
 }
 
+fn max_cliques_rec(
+    graph: &Graph,
+    current_set: HashSet<u32>,
+    mut candidate_set: HashSet<u32>,
+    mut excluded_set: HashSet<u32>,
+    reported: &mut Vec<HashSet<u32>>,
+) {
+    if candidate_set.is_empty() && excluded_set.is_empty() {
+        reported.push(current_set);
+        return;
+    }
+
+    let vertices = candidate_set.iter().cloned().collect::<Vec<_>>();
+
+    for vertex in vertices {
+        let mut current_set = current_set.clone();
+        current_set.insert(vertex);
+
+        let neighbors = graph.edges[&vertex].iter().cloned().collect::<HashSet<_>>();
+        let candidate_set_rec_call = candidate_set
+            .intersection(&neighbors)
+            .cloned()
+            .collect::<HashSet<_>>();
+        let excluded_set_rec_call = excluded_set
+            .intersection(&neighbors)
+            .cloned()
+            .collect::<HashSet<_>>();
+
+        max_cliques_rec(
+            graph,
+            current_set,
+            candidate_set_rec_call,
+            excluded_set_rec_call,
+            reported,
+        );
+
+        candidate_set.remove(&vertex);
+        excluded_set.insert(vertex);
+    }
+}
+
+fn max_cliques(graph: &Graph) -> Vec<HashSet<u32>> {
+    let mut ret = vec![];
+    max_cliques_rec(
+        graph,
+        HashSet::new(),
+        (0..graph.num_nodes).collect(),
+        HashSet::new(),
+        &mut ret,
+    );
+
+    ret
+}
+
+fn part2(graph: &Graph) -> String {
+    let max_cliques = max_cliques(graph);
+    let max_clique = max_cliques
+        .iter()
+        .max_by_key(|clique| clique.len())
+        .unwrap();
+    let mut sorted = max_clique
+        .iter()
+        .map(|x| graph.name_per_node[x].clone())
+        .collect::<Vec<_>>();
+    sorted.sort();
+    let mut output = String::new();
+    for s in &sorted {
+        output += s;
+        output += ",";
+    }
+
+    output = output.strip_suffix(",").unwrap().to_owned();
+
+    output
+}
+
 fn main() {
     let input = std::fs::read_to_string("input/day23.txt").unwrap();
     let graph = parse(&input);
 
     let part1 = part1(&graph);
     println!("part 1: {part1}");
+
+    let part2 = part2(&graph);
+    println!("part 2: {part2:?}");
 }
 
 #[cfg(test)]
